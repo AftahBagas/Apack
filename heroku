@@ -1,0 +1,89 @@
+set -e
+
+WORK_DIR="userbot"
+mkdir -p $WORK_DIR
+
+disp () {
+    echo "-----> $*"
+}
+
+indent () {
+    sed -u 's/^/       /'
+}
+
+_done () {
+    echo -e "Done\n" | indent
+}
+
+_displaylogo () {
+    echo '
+===========================================
+        𝘼𝙇𝙋𝙃𝘼 𝙐𝙎𝙀𝙍𝘽𝙊𝙏 𝘼𝙇𝙋𝙃𝘼 𝙐𝙎𝙀𝙍𝘽𝙊𝙏
+ ⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙
+ ⚙⚙     ⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙     ⚙⚙
+ ⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙
+               ⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙
+          ⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙
+ ⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙
+===========================================
+|            VERSION  v0.1.0                 |
+|      By: Kanjengingsun [ Alfareza ]        |
+|           (C) 2021 - Alpha Userbot         |
+===========================================
+'
+}
+
+get_branch () {
+    local branch
+    if [[ $PREF_BRANCH ]]
+    then
+        branch=$(echo $PREF_BRANCH | xargs)
+    else
+        branch=Alpha
+    fi
+    echo "/archive/refs/heads/$branch.zip"
+}
+
+get_ziplink () {
+    local regex
+    regex='(https?)://github.com/.+/.+'
+    if [[ $UPSTREAM_REPO =~ $regex ]]
+    then 
+        echo "${UPSTREAM_REPO}$(get_branch)"
+    else
+        echo "$(echo "aHR0cHM6Ly9naXRodWIuY29tL0lsaGFtTWFuc2llei9QZXRlcmNvcmQ" | base64 -d)$(get_branch)"
+    fi
+}
+
+_setup_repo () {
+    local zippath
+    zippath="$WORK_DIR/temp.zip"
+    disp "Fetching Update from Upstream Repo"
+    wget -qq $(get_ziplink) -O "$zippath"
+    _done
+    disp "Unpacking Data"
+    unzip -qq "$zippath" -d "$WORK_DIR"
+    _done
+    disp "Cleaning"
+    rm -rf "$zippath"
+    _done
+}
+
+_startbot () {
+    local bot_dir
+    bot_dir=$(cd $WORK_DIR && ls) && mv "$WORK_DIR/$bot_dir" "Alpha"
+    rm -rf $WORK_DIR
+    cd "Alpha"
+    git init > /dev/null 2>&1
+    echo -e ">><< --- >><<  Starting [Alpha]  >><< --- >><<\n" | indent
+    bash run
+}
+
+begin_alpha () {
+    _displaylogo
+    sleep 5
+    _setup_repo
+    _startbot
+}
+
+begin_alpha
